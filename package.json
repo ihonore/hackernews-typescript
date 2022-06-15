@@ -1,0 +1,29 @@
+{
+  "name": "hackernews-typescript",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ihonore/hackernews-typescript.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ihonore/hackernews-typescript/issues"
+  },
+  "homepage": "https://github.com/ihonore/hackernews-typescript#readme",
+  "devDependencies": {
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.7.3"
+  },
+  "dependencies": {
+    "apollo-server": "^3.8.2",
+    "graphql": "^15.8.0",
+    "nexus": "^1.3.0"
+  }
+}
