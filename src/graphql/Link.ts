@@ -1,18 +1,26 @@
-import { extendType, nonNull, objectType, stringArg } from 'nexus';
+import { Prisma } from '@prisma/client';
+import {
+  arg,
+  enumType,
+  extendType,
+  inputObjectType,
+  intArg,
+  list,
+  nonNull,
+  objectType,
+  stringArg,
+} from 'nexus';
 import { NexusGenObjects } from '../../nexus-typegen';
 
 export const Link = objectType({
-  name: 'Link', // 1
+  name: 'Link',
   definition(t) {
-    // 2
-    t.nonNull.int('id'); // 3
-    t.nonNull.string('description'); // 4
-    t.nonNull.string('url'); // 5
+    t.nonNull.int('id');
+    t.nonNull.string('description');
+    t.nonNull.string('url');
     t.field('postedBy', {
-      // 1
       type: 'User',
       resolve(parent, args, context) {
-        // 2
         return context.prisma.link
           .findUnique({ where: { id: parent.id } })
           .postedBy();
@@ -20,44 +28,78 @@ export const Link = objectType({
     });
   },
 });
-let links: NexusGenObjects['Link'][] = [
-  // 1
-  {
-    id: 1,
-    url: 'www.howtographql.com',
-    description: 'Fullstack tutorial for GraphQL',
+
+export const LinkOrderByInput = inputObjectType({
+  name: 'LinkOrderByInput',
+  definition(t) {
+    t.field('description', { type: Sort });
+    t.field('url', { type: Sort });
+    t.field('createdAt', { type: Sort });
   },
-  {
-    id: 2,
-    url: 'graphql.org',
-    description: 'GraphQL official website',
+});
+
+export const Sort = enumType({
+  name: 'Sort',
+  members: ['asc', 'desc'],
+});
+
+export const Feed = objectType({
+  name: 'Feed',
+  definition(t) {
+    t.nonNull.list.nonNull.field('links', { type: Link });
+    t.nonNull.int('count');
+    t.id('id');
   },
-];
+});
 
 export const LinkQuery = extendType({
-  // 2
   type: 'Query',
   definition(t) {
-    t.nonNull.list.nonNull.field('feed', {
-      // 3
-      type: 'Link',
-      resolve(parent, args, context) {
-        // 4
-        return context.prisma.link.findMany();
+    t.nonNull.field('feed', {
+      type: 'Feed',
+      args: {
+        filter: stringArg(),
+        skip: intArg(),
+        take: intArg(),
+        orderBy: arg({ type: list(nonNull(LinkOrderByInput)) }),
+      },
+      async resolve(parent, args, context) {
+        const where = args.filter
+          ? {
+              OR: [
+                { description: { contains: args.filter } },
+                { url: { contains: args.filter } },
+              ],
+            }
+          : {};
+        const links = await context.prisma.link.findMany({
+          where,
+          skip: args?.skip as number | undefined,
+          take: args?.take as number | undefined,
+          orderBy: args?.orderBy as
+            | Prisma.Enumerable<Prisma.LinkOrderByWithRelationInput>
+            | undefined,
+        });
+
+        const count = await context.prisma.link.count({ where });
+        const id = `main-feed:${JSON.stringify(args)}`;
+
+        return {
+          links,
+          count,
+          id,
+        };
       },
     });
   },
 });
 
 export const LinkMutation = extendType({
-  // 1
   type: 'Mutation',
   definition(t) {
     t.nonNull.field('post', {
-      // 2
       type: 'Link',
       args: {
-        // 3
         description: nonNull(stringArg()),
         url: nonNull(stringArg()),
       },
@@ -67,7 +109,6 @@ export const LinkMutation = extendType({
         const { userId } = context;
 
         if (!userId) {
-          // 1
           throw new Error('Cannot post without logging in.');
         }
 
@@ -75,7 +116,7 @@ export const LinkMutation = extendType({
           data: {
             description,
             url,
-            postedBy: { connect: { id: userId } }, // 2
+            postedBy: { connect: { id: userId } },
           },
         });
 
